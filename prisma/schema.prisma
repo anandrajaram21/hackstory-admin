@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+
+datasource db {
+  provider     = "mysql"
+  // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+  // Further reading:
+  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+  // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Team {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  members    User[]
+  code       String      @unique
+  submission Submission?
+}
+
+model SubmittedFile {
+  id           String      @id @default(cuid())
+  fileName     String
+  fileUrl      String
+  Submission   Submission? @relation(fields: [submissionId], references: [id])
+  submissionId String?
+
+  @@index([submissionId])
+}
+
+model Submission {
+  id          String          @id @default(cuid())
+  submittedAt DateTime        @default(now())
+  projectLink String
+  description String
+  status      Round           @default(ROUND_0)
+  feedback    String?
+  files       SubmittedFile[]
+  empty       Boolean         @default(true)
+  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId      String          @unique
+}
+
+enum Round {
+  ROUND_0
+  ROUND_1
+  ROUND_2
+  ROUND_3
+}
+
+// Necessary for Next auth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  leader        Boolean   @default(false)
+  pullingUp     Boolean   @default(false)
+  accounts      Account[]
+  sessions      Session[]
+  Team          Team?     @relation(fields: [teamId], references: [id])
+  teamId        String?
+
+  @@index([teamId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

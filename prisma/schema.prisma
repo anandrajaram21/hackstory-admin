@@ -37,7 +37,9 @@ model SubmittedFile {
 model Submission {
   id          String          @id @default(cuid())
   submittedAt DateTime        @default(now())
-  projectLink String
+  projectName String @default("")
+  projectLink String @default("")
+  otherLinks String @default("")
   description String
   status      Round           @default(ROUND_0)
   feedback    String?
@@ -87,6 +89,7 @@ model Session {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  admin Boolean @default(false)
   email         String?   @unique
   emailVerified DateTime?
   image         String?
@@ -107,3 +110,4 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
